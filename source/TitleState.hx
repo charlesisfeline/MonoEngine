@@ -232,7 +232,7 @@ class TitleState extends MusicBeatState
 
 		var engineversionText:FlxText = new FlxText(5, FlxG.height - 18, 0, "FNF: Mono Engine v0.1.1", 12);
 		engineversionText.scrollFactor.set();
-		engineversionText.setFormat("Funkin", 16, FlxColor.WHITE, LEFT);
+		engineversionText.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT);
 		add(engineversionText);
 
 		FlxTween.tween(credTextShit, {y: credTextShit.y + 20}, 2.9, {ease: FlxEase.quadInOut, type: PINGPONG});
