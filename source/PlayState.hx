@@ -3030,7 +3030,7 @@ class PlayState extends MusicBeatState
 				var notesDatas:Array<Int> = [];
 				var dupeNotes:Array<Note> = [];
 				notes.forEachAlive(function(daNote:Note) {
-					if (daNote.canBeHit && daNote.mustPress && !daNote.tooLate && !daNote.wasGoodHit) {
+					if (!daNote.isSustainNote && daNote.canBeHit && daNote.mustPress && !daNote.tooLate && !daNote.wasGoodHit) {
 						if (notesDatas.indexOf(daNote.noteData) != -1) {
 							for (i in 0...notesHitArray.length) {
 								var prevNote = notesHitArray[i];
@@ -3063,7 +3063,8 @@ class PlayState extends MusicBeatState
 					for (i in 0...controlArray.length) {
 						if(controlArray[i] && notesDatas.indexOf(i) == -1) {
 							if(canMiss) {
-								badNoteHit();
+								noteMiss(i);
+								break;
 							}
 						}
 					}
