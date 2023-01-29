@@ -22,6 +22,7 @@ import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxTimer;
 import flixel.input.keyboard.FlxKey;
+import flixel.graphics.FlxGraphic;
 import Controls;
 
 using StringTools;
@@ -52,8 +53,9 @@ class OptionsState extends MusicBeatState
 
 		for (i in 0...options.length)
 		{
-			var optionText:Alphabet = new Alphabet(0, (100 * i) + 210, options[i], true, false);
-			optionText.screenCenter(X);
+			var optionText:Alphabet = new Alphabet(0, 0, options[i], true, false);
+			optionText.screenCenter();
+			optionText.y += (100 * (i - (options.length / 2))) + 50;
 			grpOptions.add(optionText);
 		}
 		changeSelection();
@@ -79,7 +81,7 @@ class OptionsState extends MusicBeatState
 
 		if (controls.BACK) {
 			FlxG.sound.play(Paths.sound('cancelMenu'));
-			FlxG.switchState(new MainMenuState());
+			MusicBeatState.switchState(new MainMenuState());
 		}
 
 		if (controls.ACCEPT) {
@@ -170,9 +172,9 @@ class NotesSubstate extends MusicBeatSubstate
 
 			var newShader:ColorSwap = new ColorSwap();
 			note.shader = newShader.shader;
-			for (type in 0...3) {
-				newShader.update(ClientPrefs.arrowHSV[i][type], type);
-			}
+			newShader.hue = ClientPrefs.arrowHSV[i][0] / 360;
+			newShader.saturation = ClientPrefs.arrowHSV[i][1] / 100;
+			newShader.brightness = ClientPrefs.arrowHSV[i][2] / 100;
 			shaderArray.push(newShader);
 		}
 		hsvText = new Alphabet(0, 0, "Hue    Saturation  Brightness", false, false, 0, 0.65);
@@ -356,7 +358,11 @@ class NotesSubstate extends MusicBeatSubstate
 	function resetValue(selected:Int, type:Int) {
 		curValue = 0;
 		ClientPrefs.arrowHSV[selected][type] = 0;
-		shaderArray[selected].update(0, type);
+		switch(type) {
+			case 0: shaderArray[selected].hue = 0;
+			case 1: shaderArray[selected].saturation = 0;
+			case 2: shaderArray[selected].brightness = 0;
+		}
 		grpNumbers.members[(selected * 3) + type].changeText('0');
 	}
 	function updateValue(change:Float = 0) {
@@ -373,9 +379,13 @@ class NotesSubstate extends MusicBeatSubstate
 			curValue = max;
 		}
 		roundedValue = Math.round(curValue);
-
 		ClientPrefs.arrowHSV[curSelected][typeSelected] = roundedValue;
-		shaderArray[curSelected].update(roundedValue, typeSelected);
+
+		switch(typeSelected) {
+			case 0: shaderArray[curSelected].hue = roundedValue / 360;
+			case 1: shaderArray[curSelected].saturation = roundedValue / 100;
+			case 2: shaderArray[curSelected].brightness = roundedValue / 100;
+		}
 		grpNumbers.members[(curSelected * 3) + typeSelected].changeText(Std.string(roundedValue));
 	}
 }
@@ -660,18 +670,23 @@ class PreferencesSubstate extends MusicBeatSubstate
 		'Framerate',
 		'Note Delay'
 	];
+
 	static var options:Array<String> = [
-		unselectableOptions[0],
+		'GRAPHICS',
 		'Low Quality',
 		'Anti-Aliasing',
+		'Persistent Cached Data',
 		#if !html5
-		noCheckbox[0], //Apparently 120FPS isn't correctly supported on Browser? Probably it has some V-Sync shit enabled by default, idk
+		'Framerate', //Apparently 120FPS isn't correctly supported on Browser? Probably it has some V-Sync shit enabled by default, idk
 		#end
-		unselectableOptions[1],
+		'GAMEPLAY',
 		'Downscroll',
-		noCheckbox[1],
+		'Middlescroll',
+		'Ghost Tapping',
+		'Note Delay',
 		'Note Splashes',
 		'Hide HUD',
+		'Hide Song Length',
 		'Flashing Lights',
 		'Camera Zooms'
 		#if !mobile
@@ -805,10 +820,7 @@ class PreferencesSubstate extends MusicBeatSubstate
 					case 'FPS Counter':
 						ClientPrefs.showFPS = !ClientPrefs.showFPS;
 						if(Main.fpsVar != null)
-							if(ClientPrefs.showFPS)
-								Main.fpsVar.x = 10;
-							else
-								Main.fpsVar.x = -100;
+							Main.fpsVar.visible = ClientPrefs.showFPS;
 
 					case 'Low Quality':
 						ClientPrefs.lowQuality = !ClientPrefs.lowQuality;
@@ -842,11 +854,24 @@ class PreferencesSubstate extends MusicBeatSubstate
 					case 'Downscroll':
 						ClientPrefs.downScroll = !ClientPrefs.downScroll;
 
+					case 'Middlescroll':
+						ClientPrefs.middleScroll = !ClientPrefs.middleScroll;
+
+					case 'Ghost Tapping':
+						ClientPrefs.ghostTapping = !ClientPrefs.ghostTapping;
+
 					case 'Camera Zooms':
 						ClientPrefs.camZooms = !ClientPrefs.camZooms;
 
 					case 'Hide HUD':
 						ClientPrefs.hideHud = !ClientPrefs.hideHud;
+
+					case 'Persistent Cached Data':
+						ClientPrefs.imagesPersist = !ClientPrefs.imagesPersist;
+						FlxGraphic.defaultPersist = ClientPrefs.imagesPersist;
+
+					case 'Hide Song Length':
+						ClientPrefs.hideTime = !ClientPrefs.hideTime;
 				}
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 				reloadValues();
@@ -916,10 +941,16 @@ class PreferencesSubstate extends MusicBeatSubstate
 				daText = "If unchecked, hides FPS Counter.";
 			case 'Low Quality':
 				daText = "If checked, disables some background details,\ndecreases loading times and improves performance.";
+			case 'Persistent Cached Data':
+				daText = "If checked, images loaded will stay in memory\nuntil the game is closed, this increases memory usage,\nbut basically makes reloading times instant.";
 			case 'Anti-Aliasing':
 				daText = "If unchecked, disables anti-aliasing, increases performance\nat the cost of the graphics not looking as smooth.";
 			case 'Downscroll':
 				daText = "If checked, notes go Down instead of Up, simple enough.";
+			case 'Middlescroll':
+				daText = "If checked, hides Opponent's notes and your notes get centered.";
+			case 'Ghost Tapping':
+				daText = "If checked, you won't get misses from pressing keys\nwhile there are no notes able to be hit.";
 			case 'Swearing':
 				daText = "If unchecked, your mom won't be angry at you.";
 			case 'Violence':
@@ -932,6 +963,8 @@ class PreferencesSubstate extends MusicBeatSubstate
 				daText = "If unchecked, the camera won't zoom in on a beat hit.";
 			case 'Hide HUD':
 				daText = "If checked, hides most HUD elements.";
+			case 'Hide Song Length':
+				daText = "If checked, the bar showing how much time is left\nwill be hidden.";
 		}
 		descText.text = daText;
 
@@ -999,6 +1032,10 @@ class PreferencesSubstate extends MusicBeatSubstate
 						daValue = ClientPrefs.flashing;
 					case 'Downscroll':
 						daValue = ClientPrefs.downScroll;
+					case 'Middlescroll':
+						daValue = ClientPrefs.middleScroll;
+					case 'Ghost Tapping':
+						daValue = ClientPrefs.ghostTapping;
 					case 'Swearing':
 						daValue = ClientPrefs.cursing;
 					case 'Violence':
@@ -1007,6 +1044,10 @@ class PreferencesSubstate extends MusicBeatSubstate
 						daValue = ClientPrefs.camZooms;
 					case 'Hide HUD':
 						daValue = ClientPrefs.hideHud;
+					case 'Persistent Cached Data':
+						daValue = ClientPrefs.imagesPersist;
+					case 'Hide Song Length':
+						daValue = ClientPrefs.hideTime;
 				}
 				checkbox.daValue = daValue;
 			}

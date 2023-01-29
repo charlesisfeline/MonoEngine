@@ -72,7 +72,6 @@ class LoadingState extends MusicBeatState
 
 				var directory:String = WeekData.getWeekDirectory();
 				checkLibrary(directory);
-				checkLibrary(directory + "_high", true);
 
 				var fadeTime = 0.5;
 				FlxG.camera.fade(FlxG.camera.bgColor, fadeTime, true);
@@ -133,7 +132,7 @@ class LoadingState extends MusicBeatState
 		if (stopMusic && FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 		
-		FlxG.switchState(target);
+		MusicBeatState.switchState(target);
 	}
 	
 	static function getSongPath()
@@ -148,7 +147,7 @@ class LoadingState extends MusicBeatState
 	
 	inline static public function loadAndSwitchState(target:FlxState, stopMusic = false)
 	{
-		FlxG.switchState(getNextState(target, stopMusic));
+		MusicBeatState.switchState(getNextState(target, stopMusic));
 	}
 	
 	static function getNextState(target:FlxState, stopMusic = false):FlxState
@@ -156,11 +155,12 @@ class LoadingState extends MusicBeatState
 		Paths.setCurrentLevel(WeekData.getWeekDirectory());
 
 		#if NO_PRELOAD_ALL
+		var directory:String = WeekData.getWeekDirectory();
 		var loaded:Bool = false;
 		if (PlayState.SONG != null) {
 			loaded = isSoundLoaded(getSongPath())
 				&& (!PlayState.SONG.needsVoices || isSoundLoaded(getVocalPath()))
-				&& isLibraryLoaded("shared");
+				&& isLibraryLoaded("shared") && isLibraryLoaded(directory);
 		}
 		
 		if (!loaded)

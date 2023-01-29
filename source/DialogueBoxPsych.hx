@@ -20,6 +20,7 @@ class DialogueBoxMono extends FlxSpriteGroup
 	var dialogueList:Array<String> = [];
 
 	public var finishThing:Void->Void;
+	public var nextDialogueThing:Void->Void = null;
 	var bgFade:FlxSprite = null;
 	var box:FlxSprite;
 	var textToType:String = '';
@@ -322,6 +323,10 @@ class DialogueBoxMono extends FlxSpriteGroup
 			char.animation.curAnim.frameRate = rate;
 		}
 		currentText++;
+
+		if(nextDialogueThing != null) {
+			nextDialogueThing();
+		}
 	}
 
 	function updateBoxOffsets() {
