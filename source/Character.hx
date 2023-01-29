@@ -25,8 +25,15 @@ class Character extends FlxSprite
 	public var specialAnim:Bool = false;
 	public var animationNotes:Array<Dynamic> = [];
 	public var stunned:Bool = false;
-	public var singDuration:Float = 4; //Multiplier of how long a character holds the sing pose
-	public var canUseAlt:Bool = false; //Character can use idle-alt, danceLeft-alt and danceRight-alt
+	var charScript:Null<HCharacter> = null;
+	public var displaceData = {
+		x: 0,
+		y: 0,
+		camX: 0,
+		camY: 0
+	};
+	public var singDuration:Float = 4; // Multiplier of how long a character holds the sing pose
+	public var canUseAlt:Bool = false; // Character can use idle-alt, danceLeft-alt and danceRight-alt
 
 	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false)
 	{
@@ -225,7 +232,6 @@ class Character extends FlxSprite
 				quickAnimAdd('singDOWNmiss', 'BF NOTE DOWN MISS');
 				quickAnimAdd('hey', 'BF HEY');
 
-
 				playAnim('idle');
 				flipX = true;
 
@@ -285,13 +291,16 @@ class Character extends FlxSprite
 
 			case 'senpai' | 'senpai-angry':
 				frames = Paths.getSparrowAtlas('characters/senpai');
-				if(curCharacter == 'senpai-angry') {
+				if (curCharacter == 'senpai-angry')
+				{
 					quickAnimAdd('idle', 'Angry Senpai Idle');
 					quickAnimAdd('singUP', 'Angry Senpai UP NOTE');
 					quickAnimAdd('singLEFT', 'Angry Senpai LEFT NOTE');
 					quickAnimAdd('singRIGHT', 'Angry Senpai RIGHT NOTE');
 					quickAnimAdd('singDOWN', 'Angry Senpai DOWN NOTE');
-				} else {
+				}
+				else
+				{
 					quickAnimAdd('idle', 'Senpai Idle');
 					quickAnimAdd('singUP', 'SENPAI UP NOTE');
 					quickAnimAdd('singLEFT', 'SENPAI LEFT NOTE');
@@ -314,7 +323,6 @@ class Character extends FlxSprite
 				quickAnimAdd('singLEFT', "left_");
 				quickAnimAdd('singDOWN', "spirit down_");
 
-
 				setGraphicSize(Std.int(width * 6));
 				updateHitbox();
 
@@ -336,8 +344,25 @@ class Character extends FlxSprite
 				quickAnimAdd('singLEFT-alt', 'Parent Left Note Mom');
 				quickAnimAdd('singRIGHT-alt', 'Parent Right Note Mom');
 
-
 				playAnim('idle');
+			default:
+				if (FileSystem.exists('assets/data/characters/$curCharacter/Init.hx'))
+				{
+					// var charCode = File.getContent('assets/characters/$curCharacter/Init.hx');
+					try
+					{
+						charScript = new HCharacter(this, 'assets/data/characters/$curCharacter/Init.hx');
+						charScript.exec("create", []);
+					}
+					catch (e)
+					{
+						charScript = null;
+						trace('Failed to load $curCharacter from HScript: ${e.message}');
+						loadBfInstead();
+					}
+				}
+				else
+					loadBfInstead();
 		}
 		loadOffsetFile(curCharacter, library);
 
@@ -364,22 +389,30 @@ class Character extends FlxSprite
 				}
 			}
 		}
+
+		if (charScript != null && charScript.exists("createPost"))
+			charScript.exec("createPost", []);
 	}
 
 	override function update(elapsed:Float)
 	{
-		if(!debugMode)
+		if (!debugMode)
 		{
-			if(heyTimer > 0) {
+			if (heyTimer > 0)
+			{
 				heyTimer -= elapsed;
-				if(heyTimer <= 0) {
-					if(specialAnim && animation.curAnim.name == 'hey' || animation.curAnim.name == 'cheer') {
+				if (heyTimer <= 0)
+				{
+					if (specialAnim && animation.curAnim.name == 'hey' || animation.curAnim.name == 'cheer')
+					{
 						specialAnim = false;
 						dance();
 					}
 					heyTimer = 0;
 				}
-			} else if(specialAnim && animation.curAnim.finished) {
+			}
+			else if (specialAnim && animation.curAnim.finished)
+			{
 				specialAnim = false;
 				dance();
 			}
@@ -399,17 +432,20 @@ class Character extends FlxSprite
 			}
 		}
 
-		if(!debugMode) {
+		if (!debugMode)
+		{
 			switch (curCharacter)
 			{
 				case 'gf':
 					if (animation.curAnim.name == 'hairFall' && animation.curAnim.finished)
 						playAnim('danceRight');
 				case 'bf-car' | 'mom-car':
-					if(animation.curAnim.finished) {
-						if(animation.curAnim.name == 'idle')
+					if (animation.curAnim.finished)
+					{
+						if (animation.curAnim.name == 'idle')
 							playAnim('idleHair');
-						else if(animation.curAnim.name.startsWith('sing') && !animation.curAnim.name.startsWith('miss')) {
+						else if (animation.curAnim.name.startsWith('sing') && !animation.curAnim.name.startsWith('miss'))
+						{
 							var framesToGoBack:Int = 4;
 							playAnim(animation.curAnim.name, false, false, animation.curAnim.frames.length - framesToGoBack);
 						}
@@ -418,6 +454,12 @@ class Character extends FlxSprite
 		}
 
 		super.update(elapsed);
+
+		if (charScript != null && charScript.exists("update"))
+			{
+				charScript.exec("update", [elapsed]);
+				return;
+			}
 	}
 
 	private var danced:Bool = false;
@@ -427,12 +469,19 @@ class Character extends FlxSprite
 	 */
 	public function dance()
 	{
+		if (charScript != null && charScript.exists("dance"))
+			{
+				charScript.exec("dance", []);
+				return;
+			}
 		if (!debugMode && !specialAnim)
 		{
 			var altString:String = '';
-			if(canUseAlt) altString = PlayState.idleAltSuffix;
+			if (canUseAlt)
+				altString = PlayState.idleAltSuffix;
 
-			if(curCharacter.startsWith('gf')) {
+			if (curCharacter.startsWith('gf'))
+			{
 				if (!animation.curAnim.name.startsWith('hair'))
 				{
 					danced = !danced;
@@ -442,7 +491,9 @@ class Character extends FlxSprite
 					else
 						playAnim('danceLeft' + altString);
 				}
-			} else {
+			}
+			else
+			{
 				switch (curCharacter)
 				{
 					case 'spooky':
@@ -454,12 +505,41 @@ class Character extends FlxSprite
 							playAnim('danceLeft' + altString);
 
 					default:
-						if(!curCharacter.endsWith('-dead'))
+						if (!curCharacter.endsWith('-dead'))
 							playAnim('idle' + altString);
 				}
 			}
 		}
 	}
+
+		// skibbidy beep po
+	// (in case there's an issue with hscript ofc)
+	function loadBfInstead()
+		{
+			curCharacter = "bf";
+			frames = Paths.getSparrowAtlas('characters/BOYFRIEND', 'preload');
+			quickAnimAdd('idle', 'BF idle dance');
+			quickAnimAdd('singUP', 'BF NOTE UP0');
+			quickAnimAdd('singLEFT', 'BF NOTE LEFT0');
+			quickAnimAdd('singRIGHT', 'BF NOTE RIGHT0');
+			quickAnimAdd('singDOWN', 'BF NOTE DOWN0');
+			quickAnimAdd('singUPmiss', 'BF NOTE UP MISS');
+			quickAnimAdd('singLEFTmiss', 'BF NOTE LEFT MISS');
+			quickAnimAdd('singRIGHTmiss', 'BF NOTE RIGHT MISS');
+			quickAnimAdd('singDOWNmiss', 'BF NOTE DOWN MISS');
+			quickAnimAdd('hey', 'BF HEY');
+
+			quickAnimAdd('firstDeath', "BF dies");
+			animation.addByPrefix('deathLoop', "BF Dead Loop", 24, true);
+			quickAnimAdd('deathConfirm', "BF Dead confirm");
+
+			animation.addByPrefix('scared', 'BF idle shaking', 24, true);
+
+			playAnim('idle');
+			library = 'preload';
+
+			flipX = true;
+		}
 
 	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
@@ -502,15 +582,42 @@ class Character extends FlxSprite
 		animation.addByPrefix(name, anim, 24, false);
 	}
 
+	public function getColorCode(char:String):String
+		{
+			var returnedString:String = '';
+			for (i in 0...charList.length)
+			{
+				var currentValue = charList[i].trim().split(':');
+				if (currentValue[0] != char)
+				{
+					continue;
+				}
+				else
+				{
+					returnedString = currentValue[2]; // this is the color code one
+				}
+			}
+			if (returnedString == '')
+			{
+				return char;
+			}
+			else
+			{
+				return returnedString;
+			}
+		}
+
 	function loadOffsetFile(fileName:String, library:String = null)
 	{
 		var path:String = Paths.getPath('images/characters/' + fileName + 'Offsets.txt', TEXT, library);
-		if (!OpenFlAssets.exists(path)) {
+		if (!OpenFlAssets.exists(path))
+		{
 			return;
 		}
 
 		var file:Array<String> = CoolUtil.coolTextFile(path);
-		for (i in 0...file.length) {
+		for (i in 0...file.length)
+		{
 			var offset:Array<String> = file[i].split(' ');
 			addOffset(offset[0], Std.parseInt(offset[1]), Std.parseInt(offset[2]));
 		}
