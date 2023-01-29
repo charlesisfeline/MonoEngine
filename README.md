@@ -1,14 +1,17 @@
 # FNF-PsychEngine
-Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
+Engine intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
 
 **Credits:**
-* Shadow Mario - Coding
-* RiverOaken - Arts and Animations
+* CharlesCatYT - Coder
+* Grits - Assistant Coder
+
+* Shadow Mario - Coder
+* RiverOaken - Spriter
 
 **Special Thanks**
 * Keoiki - Note Splash Animations
 
-WARNING: This engine is still very early in development! You can request new features though
+WARNING: This engine is still very early in development! You can request new features though.
 _____________________________________
 
 **FEATURES:**
